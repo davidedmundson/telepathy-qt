@@ -3651,10 +3651,19 @@ void Channel::gotSubjectProperties(PendingOperation *op)
     readinessHelper()->setIntrospectCompleted(FeatureSubject, true);
 }
 
+// FIXME: Get rid of this in favor of C++11 cstdint.
+#define INT64_MAX        +9223372036854775807LL
+
 void Channel::onSubjectInterfacePropertiesChanged(const QVariantMap &changedProperties, const QStringList &invalidatedProperties)
 {
     if (changedProperties.contains(QLatin1String("Timestamp"))) {
-        mPriv->subjectTimestamp.setTime_t(qdbus_cast<qlonglong>(changedProperties[QLatin1String("Timestamp")]));
+        qlonglong timestamp = qdbus_cast<qlonglong>(changedProperties[QLatin1String("Timestamp")]);
+        // INT64_MAX is the magic value that means unknown.
+        if (timestamp == INT64_MAX) {
+            mPriv->subjectTimestamp = QDateTime();
+        } else {
+            mPriv->subjectTimestamp.setTime_t(timestamp);
+        }
     }
     if (invalidatedProperties.contains(QLatin1String("Timestamp"))) {
         mPriv->subjectTimestamp = QDateTime();
