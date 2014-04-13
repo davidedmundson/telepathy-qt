@@ -164,9 +164,9 @@ public:
     bool supportsConferenceSplitting() const;
     PendingOperation *conferenceSplitChannel();
 
-    const QString& subject() const;
-    const QDateTime& subjectTimestamp() const;
-    const QString& subjectActorId() const;
+    QString subject() const;
+    QDateTime subjectTimestamp() const;
+    QString subjectActorId() const;
     bool canSetSubject() const;
 
     PendingOperation *setSubject(const QString &subject);

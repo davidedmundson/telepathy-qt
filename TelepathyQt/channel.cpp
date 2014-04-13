@@ -2902,7 +2902,7 @@ PendingOperation *Channel::conferenceSplitChannel()
  * \sa canSetSubject()
  *
  */
-const QString& Channel::subject() const
+QString Channel::subject() const
 {
     return mPriv->subject;
 }
@@ -2913,7 +2913,7 @@ const QString& Channel::subject() const
  * \return Time when the subject was last modified.
  *
  */
-const QDateTime& Channel::subjectTimestamp() const
+QDateTime Channel::subjectTimestamp() const
 {
     return mPriv->subjectTimestamp;
 }
@@ -2924,7 +2924,7 @@ const QDateTime& Channel::subjectTimestamp() const
  * \return The normalized contact ID representing who last
  *         modified the subject, or the empty string if it is not known.
  */
-const QString& Channel::subjectActorId() const
+QString Channel::subjectActorId() const
 {
     return mPriv->subjectActorId;
 }
