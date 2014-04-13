@@ -338,7 +338,9 @@ Channel::Private::Private(Channel *parent, const ConnectionPtr &connection,
     ReadinessHelper::Introspectable introspectableSubject(
         QSet<uint>() << 0,
         Features() << FeatureCore,
-        QStringList() << TP_QT_IFACE_CHANNEL_INTERFACE_SUBJECT,
+        // Ugly hack to make this feature optional: Check for the interface manually
+        // and succeed if it isn't there.
+        QStringList() << // TP_QT_IFACE_CHANNEL_INTERFACE_SUBJECT,
         (ReadinessHelper::IntrospectFunc) &Private::introspectSubject,
         this);
     introspectables[FeatureSubject] = introspectableSubject;
@@ -603,6 +605,11 @@ void Channel::Private::introspectSubject(Channel::Private *self)
 {
     Client::ChannelInterfaceSubjectInterface *subjectInterface =
             self->parent->optionalInterface<Client::ChannelInterfaceSubjectInterface>();
+    // Ugly hack to make this feature optional: Check for the interface manually
+    // and succeed if it isn't there.
+    if (!subjectInterface) {
+        readinessHelper().setIntrospectCompleted(FeatuerSubject, true)
+    }
     self->parent->connect(subjectInterface->requestAllProperties(),
                           SIGNAL(finished(Tp::PendingOperation*)),
                           SLOT(gotSubjectProperties(Tp::PendingOperation*)));
