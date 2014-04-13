@@ -195,7 +195,9 @@ Q_SIGNALS:
     void conferenceChannelRemoved(const Tp::ChannelPtr &channel,
             const Tp::Channel::GroupMemberChangeDetails &details);
 
-    void subjectChanged(const QString &subject);
+    void subjectChanged(const QString &subject,
+                        const QDateTime &timestamp,
+                        const QString &actorId);
     void canSetSubjectChanged(bool canSetSubject);
 
 protected:

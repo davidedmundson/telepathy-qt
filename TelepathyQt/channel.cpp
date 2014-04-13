@@ -3652,14 +3652,6 @@ void Channel::gotSubjectProperties(PendingOperation *op)
 
 void Channel::onSubjectInterfacePropertiesChanged(const QVariantMap &changedProperties, const QStringList &invalidatedProperties)
 {
-    if (changedProperties.contains(QLatin1String("Subject"))) {
-        mPriv->subject = qdbus_cast<QString>(changedProperties[QLatin1String("Subject")]);
-        Q_EMIT subjectChanged(mPriv->subject);
-    }
-    if (invalidatedProperties.contains(QLatin1String("Subject"))) {
-        mPriv->subject = QString();
-    }
-
     if (changedProperties.contains(QLatin1String("Timestamp"))) {
         mPriv->subjectTimestamp.setTime_t(qdbus_cast<qlonglong>(changedProperties[QLatin1String("Timestamp")]));
     }
@@ -3673,6 +3665,16 @@ void Channel::onSubjectInterfacePropertiesChanged(const QVariantMap &changedProp
     if (invalidatedProperties.contains(QLatin1String("Actor"))) {
         mPriv->subjectActorId = QString();
     }
+    if (changedProperties.contains(QLatin1String("Subject"))) {
+        mPriv->subject = qdbus_cast<QString>(changedProperties[QLatin1String("Subject")]);
+        Q_EMIT subjectChanged(mPriv->subject,
+                              mPriv->subjectTimestamp,
+                              mPriv->subjectActorId);
+    }
+    if (invalidatedProperties.contains(QLatin1String("Subject"))) {
+        mPriv->subject = QString();
+    }
+
     // TODO: Get ActorHandle, make a Contact ready and expose it.
     // ActorHandle doesn't seem to implemented in gabble yet as of 2014-04-12.
 
