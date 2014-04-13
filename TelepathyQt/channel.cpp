@@ -42,6 +42,7 @@
 #include <TelepathyQt/PendingOperation>
 #include <TelepathyQt/PendingReady>
 #include <TelepathyQt/PendingSuccess>
+#include <TelepathyQt/PendingVariantMap>
 #include <TelepathyQt/StreamTubeChannel>
 #include <TelepathyQt/ReferencedHandles>
 #include <TelepathyQt/Constants>
@@ -76,6 +77,8 @@ struct TP_QT_NO_EXPORT Channel::Private
     void introspectConference();
 
     static void introspectConferenceInitialInviteeContacts(Private *self);
+
+    static void introspectSubject(Private *self);
 
     void continueIntrospection();
 
@@ -207,6 +210,12 @@ struct TP_QT_NO_EXPORT Channel::Private
     QQueue<ConferenceChannelRemovedInfo *> conferenceChannelRemovedQueue;
     bool buildingConferenceChannelRemovedActorContact;
 
+    // Subject
+    QString subject;
+    QDateTime subjectTimestamp;
+    QString subjectActorId;
+    bool canSetSubject;
+
     static const QString keyActor;
 };
 
@@ -325,6 +334,14 @@ Channel::Private::Private(Channel *parent, const ConnectionPtr &connection,
         this);
     introspectables[FeatureConferenceInitialInviteeContacts] =
         introspectableConferenceInitialInviteeContacts;
+
+    ReadinessHelper::Introspectable introspectableSubject(
+        QSet<uint>() << 0,
+        Features() << FeatureCore,
+        QStringList() << TP_QT_IFACE_CHANNEL_INTERFACE_SUBJECT,
+        (ReadinessHelper::IntrospectFunc) &Private::introspectSubject,
+        this);
+    introspectables[FeatureSubject] = introspectableSubject;
 
     readinessHelper->addIntrospectables(introspectables);
 }
@@ -580,6 +597,19 @@ void Channel::Private::introspectConferenceInitialInviteeContacts(Private *self)
         self->readinessHelper->setIntrospectCompleted(
                 FeatureConferenceInitialInviteeContacts, true);
     }
+}
+
+void Channel::Private::introspectSubject(Channel::Private *self)
+{
+    Client::ChannelInterfaceSubjectInterface *subjectInterface =
+            self->parent->optionalInterface<Client::ChannelInterfaceSubjectInterface>();
+    self->parent->connect(subjectInterface->requestAllProperties(),
+                          SIGNAL(finished(Tp::PendingOperation*)),
+                          SLOT(gotSubjectProperties(Tp::PendingOperation*)));
+    subjectInterface->setMonitorProperties(true);
+    self->parent->connect(subjectInterface,
+                          SIGNAL(propertiesChanged(QVariantMap,QStringList)),
+                          SLOT(onSubjectInterfacePropertiesChanged(QVariantMap,QStringList)));
 }
 
 void Channel::Private::continueIntrospection()
@@ -1546,6 +1576,16 @@ const Feature Channel::FeatureCore = Feature(QLatin1String(Channel::staticMetaOb
  * \sa conferenceInitialInviteeContacts()
  */
 const Feature Channel::FeatureConferenceInitialInviteeContacts = Feature(QLatin1String(Channel::staticMetaObject.className()), 1, true);
+
+/**
+ * Feature used in order to access the room subject
+ *
+ * \sa subject()
+ * \sa subjectTimestamp()
+ * \sa subjectActorId()
+ * \sa canSetSubject()
+ */
+const Feature Channel::FeatureSubject = Feature(QLatin1String(Channel::staticMetaObject.className()), 2, true);
 
 /**
  * Create a new Channel object.
@@ -2847,6 +2887,51 @@ PendingOperation *Channel::conferenceSplitChannel()
 }
 
 /**
+ * This method requires Channel::FeatureSubject to be ready.
+ *
+ * \return The human-readable subject on the channel such as the topic
+ *         in an IRC channel, or the room name in XMPP MUCs.
+ * \sa canSetSubject()
+ *
+ */
+const QString& Channel::subject() const
+{
+    return mPriv->subject;
+}
+
+/**
+ * This method requires Channel::FeatureSubject to be ready.
+ *
+ * \return Time when the subject was last modified.
+ *
+ */
+const QDateTime& Channel::subjectTimestamp() const
+{
+    return mPriv->subjectTimestamp;
+}
+
+/**
+ * This method requires Channel::FeatureSubject to be ready.
+ *
+ * \return The normalized contact ID representing who last
+ *         modified the subject, or the empty string if it is not known.
+ */
+const QString& Channel::subjectActorId() const
+{
+    return mPriv->subjectActorId;
+}
+
+/**
+ * This method requires Channel::FeatureSubject to be ready.
+ *
+ * \return \c true if the subject can be set by the user otherwise \c false.
+ */
+bool Channel::canSetSubject() const
+{
+    return mPriv->canSetSubject;
+}
+
+/**
  * Return the Client::ChannelInterface interface proxy object for this channel.
  * This method is protected since the convenience methods provided by this
  * class should generally be used instead of calling D-Bus methods
@@ -3521,6 +3606,54 @@ void Channel::gotConferenceChannelRemovedActorContact(PendingOperation *op)
 
     mPriv->buildingConferenceChannelRemovedActorContact = false;
     mPriv->processConferenceChannelRemoved();
+}
+
+void Channel::gotSubjectProperties(PendingOperation *op)
+{
+    if (op->isError()) {
+        debug() << "Get Channel.Interface.Subject properties failed";
+        readinessHelper()->setIntrospectCompleted(FeatureSubject,
+                                                  false,
+                                                  op->errorName(),
+                                                  op->errorMessage());
+        return;
+    }
+    PendingVariantMap *pvm = qobject_cast<PendingVariantMap*>(op);
+    Q_ASSERT(pvm);
+    const QVariantMap& props = pvm->result();
+    onSubjectInterfacePropertiesChanged(props, QStringList());
+    readinessHelper()->setIntrospectCompleted(FeatureSubject, true);
+}
+
+void Channel::onSubjectInterfacePropertiesChanged(const QVariantMap &changedProperties, const QStringList &invalidatedProperties)
+{
+    if (changedProperties.contains(QLatin1String("Subject"))) {
+        mPriv->subject = qdbus_cast<QString>(changedProperties[QLatin1String("Subject")]);
+        Q_EMIT subjectChanged(mPriv->subject);
+    }
+    if (invalidatedProperties.contains(QLatin1String("Subject"))) {
+        mPriv->subject = QString();
+    }
+
+    if (changedProperties.contains(QLatin1String("Timestamp"))) {
+        mPriv->subjectTimestamp.setTime_t(qdbus_cast<qlonglong>(changedProperties[QLatin1String("Timestamp")]));
+    }
+    if (invalidatedProperties.contains(QLatin1String("Timestamp"))) {
+        mPriv->subjectTimestamp = QDateTime();
+    }
+
+    if (changedProperties.contains(QLatin1String("Actor"))) {
+        mPriv->subjectActorId = qdbus_cast<QString>(changedProperties[QLatin1String("Actor")]);
+    }
+    if (invalidatedProperties.contains(QLatin1String("Actor"))) {
+        mPriv->subjectActorId = QString();
+    }
+    // TODO: Get ActorHandle, make a Contact ready and expose it.
+    // ActorHandle doesn't seem to implemented in gabble yet as of 2014-04-12.
+
+    if (changedProperties.contains(QLatin1String("CanSet"))) {
+        mPriv->canSetSubject = qdbus_cast<bool>(changedProperties[QLatin1String("CanSet")]);
+    }
 }
 
 /**
