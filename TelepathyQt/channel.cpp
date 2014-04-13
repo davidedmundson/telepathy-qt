@@ -3683,6 +3683,9 @@ void Channel::onSubjectInterfacePropertiesChanged(const QVariantMap &changedProp
         mPriv->canSetSubject = qdbus_cast<bool>(changedProperties[QLatin1String("CanSet")]);
         Q_EMIT canSetSubjectChanged(mPriv->canSetSubject);
     }
+    if (invalidatedProperties.contains(QLatin1String("CanSet"))) {
+        mPriv->canSetSubject = false;
+    }
 }
 
 /**
