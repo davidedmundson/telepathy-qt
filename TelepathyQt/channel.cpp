@@ -340,7 +340,7 @@ Channel::Private::Private(Channel *parent, const ConnectionPtr &connection,
         Features() << FeatureCore,
         // Ugly hack to make this feature optional: Check for the interface manually
         // and succeed if it isn't there.
-        QStringList() << // TP_QT_IFACE_CHANNEL_INTERFACE_SUBJECT,
+        QStringList(), // << TP_QT_IFACE_CHANNEL_INTERFACE_SUBJECT,
         (ReadinessHelper::IntrospectFunc) &Private::introspectSubject,
         this);
     introspectables[FeatureSubject] = introspectableSubject;
@@ -608,7 +608,7 @@ void Channel::Private::introspectSubject(Channel::Private *self)
     // Ugly hack to make this feature optional: Check for the interface manually
     // and succeed if it isn't there.
     if (!subjectInterface) {
-        readinessHelper().setIntrospectCompleted(FeatuerSubject, true)
+        self->readinessHelper->setIntrospectCompleted(FeatureSubject, true);
     }
     self->parent->connect(subjectInterface->requestAllProperties(),
                           SIGNAL(finished(Tp::PendingOperation*)),
@@ -2936,6 +2936,23 @@ const QString& Channel::subjectActorId() const
 bool Channel::canSetSubject() const
 {
     return mPriv->canSetSubject;
+}
+
+/**
+ * Set the subject of this channel.
+ *
+ * This method requires Channel::FeatureSubject to be ready
+ * and \c canSetSubject() to be \c true.
+ */
+PendingOperation *Channel::setSubject(const QString &subject)
+{
+    Client::ChannelInterfaceSubjectInterface *subjectInterface =
+            optionalInterface<Client::ChannelInterfaceSubjectInterface>();
+    if (subjectInterface && canSetSubject()) {
+        return new PendingVoid(subjectInterface->SetSubject(subject), ChannelPtr(this));
+    }
+    return new PendingFailure(TP_QT_ERROR_PERMISSION_DENIED,
+        QLatin1String("Not allowed to set subject"), ChannelPtr(this));
 }
 
 /**

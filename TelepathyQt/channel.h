@@ -169,6 +169,7 @@ public:
     const QString& subjectActorId() const;
     bool canSetSubject() const;
 
+    PendingOperation *setSubject(const QString &subject);
 
 Q_SIGNALS:
     void groupFlagsChanged(Tp::ChannelGroupFlags flags,
