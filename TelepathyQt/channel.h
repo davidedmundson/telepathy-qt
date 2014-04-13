@@ -196,6 +196,7 @@ Q_SIGNALS:
             const Tp::Channel::GroupMemberChangeDetails &details);
 
     void subjectChanged(const QString &subject);
+    void canSetSubjectChanged(bool canSetSubject);
 
 protected:
     Channel(const ConnectionPtr &connection,const QString &objectPath,

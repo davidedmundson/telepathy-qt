@@ -292,7 +292,8 @@ Channel::Private::Private(Channel *parent, const ConnectionPtr &connection,
       groupIsSelfHandleTracked(false),
       groupSelfHandle(0),
       introspectingConference(false),
-      buildingConferenceChannelRemovedActorContact(false)
+      buildingConferenceChannelRemovedActorContact(false),
+      canSetSubject(false)
 {
     debug() << "Creating new Channel:" << parent->objectPath();
 
@@ -3677,6 +3678,7 @@ void Channel::onSubjectInterfacePropertiesChanged(const QVariantMap &changedProp
 
     if (changedProperties.contains(QLatin1String("CanSet"))) {
         mPriv->canSetSubject = qdbus_cast<bool>(changedProperties[QLatin1String("CanSet")]);
+        Q_EMIT canSetSubjectChanged(mPriv->canSetSubject);
     }
 }
 
