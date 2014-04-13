@@ -610,6 +610,7 @@ void Channel::Private::introspectSubject(Channel::Private *self)
     // and succeed if it isn't there.
     if (!subjectInterface) {
         self->readinessHelper->setIntrospectCompleted(FeatureSubject, true);
+        return;
     }
     self->parent->connect(subjectInterface->requestAllProperties(),
                           SIGNAL(finished(Tp::PendingOperation*)),
