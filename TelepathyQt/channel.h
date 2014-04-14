@@ -57,6 +57,7 @@ class TP_QT_EXPORT Channel : public StatefulDBusProxy,
 public:
     static const Feature FeatureCore;
     static const Feature FeatureConferenceInitialInviteeContacts;
+    static const Feature FeatureSubject;
 
     static ChannelPtr create(const ConnectionPtr &connection,
             const QString &objectPath, const QVariantMap &immutableProperties);
@@ -163,6 +164,13 @@ public:
     bool supportsConferenceSplitting() const;
     PendingOperation *conferenceSplitChannel();
 
+    QString subject() const;
+    QDateTime subjectTimestamp() const;
+    QString subjectActorId() const;
+    bool canSetSubject() const;
+
+    PendingOperation *setSubject(const QString &subject);
+
 Q_SIGNALS:
     void groupFlagsChanged(Tp::ChannelGroupFlags flags,
             Tp::ChannelGroupFlags added, Tp::ChannelGroupFlags removed);
@@ -186,6 +194,11 @@ Q_SIGNALS:
     void conferenceChannelMerged(const Tp::ChannelPtr &channel);
     void conferenceChannelRemoved(const Tp::ChannelPtr &channel,
             const Tp::Channel::GroupMemberChangeDetails &details);
+
+    void subjectChanged(const QString &subject,
+                        const QDateTime &timestamp,
+                        const QString &actorId);
+    void canSetSubjectChanged(bool canSetSubject);
 
 protected:
     Channel(const ConnectionPtr &connection,const QString &objectPath,
@@ -236,6 +249,9 @@ private Q_SLOTS:
     TP_QT_NO_EXPORT void onConferenceChannelRemoved(const QDBusObjectPath &channel);
     TP_QT_NO_EXPORT void gotConferenceChannelRemovedActorContact(Tp::PendingOperation *op);
 
+    TP_QT_NO_EXPORT void gotSubjectProperties(Tp::PendingOperation *op);
+    TP_QT_NO_EXPORT void onSubjectInterfacePropertiesChanged(const QVariantMap &changedProperties,
+            const QStringList &invalidatedProperties);
 private:
     class PendingLeave;
     friend class PendingLeave;
