@@ -2905,6 +2905,9 @@ PendingOperation *Channel::conferenceSplitChannel()
  */
 QString Channel::subject() const
 {
+    if (!isReady(FeatureSubject)) {
+        warning() << "Channel::subject() used without FeatureSubject ready."
+    }
     return mPriv->subject;
 }
 
@@ -2916,6 +2919,9 @@ QString Channel::subject() const
  */
 QDateTime Channel::subjectTimestamp() const
 {
+    if (!isReady(FeatureSubject)) {
+        warning() << "Channel::subjectTimestamp() used without FeatureSubject ready."
+    }
     return mPriv->subjectTimestamp;
 }
 
@@ -2927,6 +2933,9 @@ QDateTime Channel::subjectTimestamp() const
  */
 QString Channel::subjectActorId() const
 {
+    if (!isReady(FeatureSubject)) {
+        warning() << "Channel::subjectActorId() used without FeatureSubject ready."
+    }
     return mPriv->subjectActorId;
 }
 
@@ -2937,6 +2946,9 @@ QString Channel::subjectActorId() const
  */
 bool Channel::canSetSubject() const
 {
+    if (!isReady(FeatureSubject)) {
+        warning() << "Channel::canSetSubject() used without FeatureSubject ready."
+    }
     return mPriv->canSetSubject;
 }
 
@@ -2948,6 +2960,10 @@ bool Channel::canSetSubject() const
  */
 PendingOperation *Channel::setSubject(const QString &subject)
 {
+    if (!isReady(FeatureSubject)) {
+        warning() << "Channel::setSubject used without FeatureSubject ready."
+    }
+
     Client::ChannelInterfaceSubjectInterface *subjectInterface =
             optionalInterface<Client::ChannelInterfaceSubjectInterface>();
     if (subjectInterface && canSetSubject()) {
